@@ -1,11 +1,10 @@
 -- KonataHub | Doors Ultimate (Aqua Edition)
 -- Fully rewritten with kyksikoid's bypasses, advanced ESP & HUD State
 
-local Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+repeat task.wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer or Players.PlayerAdded:Wait()
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -13,8 +12,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local Stats = game:GetService("Stats")
 
-local LocalPlayer = Players.LocalPlayer
-repeat task.wait() until LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+-- Библиотека Fluent UI (Исправлены проверенные ссылки)
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 -- Ремоуты Doors
 local RemotesFolder = ReplicatedStorage:FindFirstChild("EntityInfo") 
