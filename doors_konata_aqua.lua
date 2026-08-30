@@ -1,5 +1,5 @@
 -- KonataHub | Doors Ultimate (Aqua Edition)
--- Featuring kyksikoid's ESPLibrary, Bypasses, Speed (75 Max), Manipulation, Keybinds HUD, and Archives Entities (Bash, Honcho, Ransom, Alma, Teller)
+-- Fully optimized: Hold-to-Activate Manipulation [V], Third Person [T], Continuous Fullbright & NoFog & FOV loop, All Doors ESP, No Lag, kyksikoid's ESPLibrary, 75 Max Speed, Keybinds HUD
 
 repeat task.wait() until game:IsLoaded()
 
@@ -11,7 +11,16 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local Stats = game:GetService("Stats")
-local HttpService = game:GetService("HttpService")
+
+-- Очистка старых контейнеров
+pcall(function()
+    if game:GetService("CoreGui"):FindFirstChild("Konata_Doors_ESP") then
+        game:GetService("CoreGui").Konata_Doors_ESP:Destroy()
+    end
+    if workspace:FindFirstChild("Konata_Doors_ESP") then
+        workspace.Konata_Doors_ESP:Destroy()
+    end
+end)
 
 -- Fluent UI & Addons
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
@@ -64,8 +73,8 @@ local LangData = {
         TabSettings = "Settings",
         
         -- ESP
-        DoorESP = "Doors & Keys",
-        DoorESPDesc = "Highlight doors, keys, and electrical locks",
+        DoorESP = "All Doors & Keys",
+        DoorESPDesc = "Highlight all rooms (Door 1, 2, 3...) & keys",
         ItemESP = "Items",
         ItemESPDesc = "Crucifix, Lockpicks, Flashlight, Vitamins, etc.",
         GoldESP = "Gold / Coins",
@@ -94,7 +103,7 @@ local LangData = {
         Fly = "Flight (Fly)",
         FlySpeed = "Fly Speed",
         InfJump = "Infinite Jump",
-        Manipulation = "Anti-Cheat Manipulation",
+        Manipulation = "Anti-Cheat Manipulation (Hold V)",
         ManipulationMethod = "Manipulation Method",
         
         -- Bypasses
@@ -111,9 +120,14 @@ local LangData = {
         DoorReach = "Fast Open Next Door",
         
         -- Visuals
-        FullBright = "Fullbright",
-        NoFog = "No Fog",
+        FullBright = "Fullbright (Always Day)",
+        NoFog = "No Fog (Clear View)",
         FOV = "Camera FOV",
+        ThirdPerson = "Third Person View",
+        ThirdPersonDesc = "Enable 3rd person camera with character visibility",
+        OffsetX = "Camera Offset X",
+        OffsetY = "Camera Offset Y",
+        OffsetZ = "Camera Offset Z",
         
         -- Auto
         AutoBreaker = "Auto Room 100 Breaker Solver",
@@ -135,8 +149,8 @@ local LangData = {
         TabSettings = "Настройки",
         
         -- ESP
-        DoorESP = "Двери и Ключи",
-        DoorESPDesc = "Подсветка дверей, номеров комнат и ключей",
+        DoorESP = "Все Двери и Ключи",
+        DoorESPDesc = "Подсветка всех дверей (Door 1, 2, 3...) и ключей",
         ItemESP = "Предметы",
         ItemESPDesc = "Кресты, отмычки, фонари, витамины и т.д.",
         GoldESP = "Золото и Монеты",
@@ -165,7 +179,7 @@ local LangData = {
         Fly = "Полет (Fly)",
         FlySpeed = "Скорость полета",
         InfJump = "Бесконечный прыжок",
-        Manipulation = "Манипуляция (Manipulation)",
+        Manipulation = "Манипуляция (Зажать V)",
         ManipulationMethod = "Метод Манипуляции",
         
         -- Bypasses
@@ -182,9 +196,14 @@ local LangData = {
         DoorReach = "Авто-открытие следующей двери",
         
         -- Visuals
-        FullBright = "Фуллбрайт (Яркий свет)",
-        NoFog = "Убрать Туман",
+        FullBright = "Фуллбрайт (Всегда светло)",
+        NoFog = "Убрать Туман (Чистый обзор)",
         FOV = "Поле зрения (FOV)",
+        ThirdPerson = "Вид от третьего лица",
+        ThirdPersonDesc = "Камера с видом сзади персонажа",
+        OffsetX = "Смещение камеры по X",
+        OffsetY = "Смещение камеры по Y",
+        OffsetZ = "Смещение камеры по Z",
         
         -- Auto
         AutoBreaker = "Авто-решение Рубильников (100 комната)",
@@ -337,7 +356,7 @@ end)
 
 local keybindsFrame = Instance.new("Frame")
 keybindsFrame.Name = "KeybindsOverlay"
-keybindsFrame.Size = UDim2.new(0, 210, 0, 165)
+keybindsFrame.Size = UDim2.new(0, 210, 0, 190)
 keybindsFrame.Position = UDim2.new(0.02, 0, 0.20, 0)
 keybindsFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 28)
 keybindsFrame.BackgroundTransparency = 0.25
@@ -411,7 +430,8 @@ end
 
 createKeybindEntry("Noclip", "Noclip", "N")
 createKeybindEntry("Fly", "Flight", "F")
-createKeybindEntry("Mani", "Manipulation", "V")
+createKeybindEntry("Mani", "Manipulation (Hold)", "V")
+createKeybindEntry("ThirdPerson", "Third Person", "T")
 createKeybindEntry("Interact", "Auto Interact", "R")
 createKeybindEntry("Menu", "Toggle Menu", "RShift")
 
@@ -423,44 +443,33 @@ local function updateKeybindState(id, isActive)
 end
 updateKeybindState("Menu", true)
 
--- ==================== KYKSIKOID ESPLIBRARY INTEGRATION ====================
+-- ==================== НАДЕЖНЫЙ ESP С КЭШИРОВАНИЕМ ====================
 
-function AddESP(part, txt, color)
-    if not part then return end
+local ESPTracked = {}
+
+local function AddESP(part, txt, color)
+    if not part or ESPTracked[part] then return end
+    ESPTracked[part] = { Text = txt, Color = color }
     ESPLibrary:AddESP({
         Object = part,
         Text = txt,
         Color = color
     })
-end
-
-function AddEntityESP(part, txt, color)
-    if not part then return end
-    if part:IsA("Model") then
-        if not part.PrimaryPart then
-            for _, v in pairs(part:GetChildren()) do
-                if v:IsA("BasePart") then
-                    part.PrimaryPart = v
-                    break
-                end
+    part.AncestryChanged:Connect(function(_, parent)
+        if not parent then
+            if ESPTracked[part] then
+                ESPLibrary:RemoveESP(part)
+                ESPTracked[part] = nil
             end
         end
-        if part.PrimaryPart then
-            pcall(function() part.PrimaryPart.Transparency = 0.99 end)
-        end
-        if not part:FindFirstChildOfClass("Humanoid") then
-            Instance.new("Humanoid", part)
-        end
+    end)
+end
+
+local function SafeRemoveESP(part)
+    if part and ESPTracked[part] then
+        ESPLibrary:RemoveESP(part)
+        ESPTracked[part] = nil
     end
-    if part.Name == "FigureRig" or part.Name == "FigureRagdoll" then
-        local root = part:FindFirstChild("Root")
-        if root then root.Size = Vector3.new(0.001, 0.001, 0.001) end
-    end
-    ESPLibrary:AddESP({
-        Object = part,
-        Text = txt,
-        Color = color
-    })
 end
 
 -- Цвета категорий ESP
@@ -471,12 +480,11 @@ local LeverColor       = Color3.fromRGB(255, 160, 50)
 local BookColor        = Color3.fromRGB(0, 180, 255)
 local BreakerColor     = Color3.fromRGB(0, 180, 255)
 local GoldColor        = Color3.fromRGB(255, 215, 0)
-local LadderColor      = Color3.fromRGB(0, 191, 255)
 local FuseColor        = Color3.fromRGB(255, 170, 0)
 local EntityColor      = Color3.fromRGB(255, 50, 50)
 local PlayerColor      = Color3.fromRGB(100, 200, 255)
 
--- База всех предметов (включая Archives & Mines)
+-- База всех предметов
 local Items = {
     ["Bandage"] = "Bandage",
     ["Flashlight"] = "Flashlight",
@@ -513,7 +521,8 @@ local Items = {
 }
 
 local HidingPlaces = {
-    ["Wardrobe"] = "Closet",
+    ["Wardrobe"] = "Wardrobe",
+    ["Closet"] = "Closet",
     ["Rooms_Locker"] = "Locker",
     ["Rooms_Locker_Fridge"] = "Fridge",
     ["Locker_Large"] = "Locker",
@@ -527,7 +536,6 @@ local HidingPlaces = {
 
 -- База монстров с новыми сущностями из ARCHIVES: Bash, Honcho, Ransom, Alma, Teller!
 local EntityAll = {
-    -- Archives Monsters
     ["Bash"] = "Bash",
     ["BashMoving"] = "Bash",
     ["Honcho"] = "Honcho",
@@ -536,8 +544,6 @@ local EntityAll = {
     ["RansomMoving"] = "Ransom",
     ["Alma"] = "Alma",
     ["Teller"] = "Teller",
-    
-    -- Hotel & Mines & Retro & Rooms Monsters
     ["RushMoving"] = "Rush",
     ["AmbushMoving"] = "Ambush",
     ["Eyes"] = "Eyes",
@@ -565,171 +571,74 @@ local EntityAll = {
     ["Mandrake"] = "Mandrake"
 }
 
-local DoorActiveESP = {}
-local function RemoveDoorESP(part)
-    if part and DoorActiveESP[part] then
-        DoorActiveESP[part] = nil
-        ESPLibrary:RemoveESP(part)
-    end
-end
-
-local function UpdateDoorESP()
-    if not (Options.DoorEsp and Options.DoorEsp.Value) then return end
-    local rooms = workspace:FindFirstChild("CurrentRooms")
-    if not rooms then return end
-    for _, room in ipairs(rooms:GetChildren()) do
-        local doorModel = room:FindFirstChild("Door")
-        if doorModel then
-            local doorPart = doorModel:FindFirstChild("Door") or doorModel:FindFirstChildWhichIsA("BasePart")
-            if doorPart and not DoorActiveESP[doorPart] then
-                DoorActiveESP[doorPart] = true
-                AddESP(doorPart, "Door " .. room.Name, DoorColor)
-            end
-        end
-        for _, v in ipairs(room:GetDescendants()) do
-            if v.Name == "KeyObtain" and not DoorActiveESP[v] then
-                DoorActiveESP[v] = true
-                AddESP(v, "Key", Color3.fromRGB(0, 255, 180))
-            elseif v.Name == "ElectrialKeyObtain" and not DoorActiveESP[v] then
-                DoorActiveESP[v] = true
-                AddESP(v, "Electrical Key", Color3.fromRGB(0, 255, 180))
-            end
-        end
-    end
-end
-
-local function ClearAllDoorESP()
-    for part in pairs(DoorActiveESP) do
-        ESPLibrary:RemoveESP(part)
-    end
-    table.clear(DoorActiveESP)
-end
-
-local ItemActiveESP = {}
-local function UpdateItemESP()
-    if not (Options.ItemEsp and Options.ItemEsp.Value) then return end
-    local rooms = workspace:FindFirstChild("CurrentRooms")
-    if not rooms then return end
-    for _, room in ipairs(rooms:GetChildren()) do
-        for _, v in ipairs(room:GetDescendants()) do
-            if Items[v.Name] and not ItemActiveESP[v] then
-                ItemActiveESP[v] = true
-                AddESP(v, Items[v.Name], ItemsColor)
-            end
-        end
-    end
-end
-
-local function ClearAllItemESP()
-    for part in pairs(ItemActiveESP) do
-        ESPLibrary:RemoveESP(part)
-    end
-    table.clear(ItemActiveESP)
-end
-
-local GoldActiveESP = {}
-local function UpdateGoldESP()
-    if not (Options.GoldEsp and Options.GoldEsp.Value) then return end
-    local rooms = workspace:FindFirstChild("CurrentRooms")
-    if not rooms then return end
-    for _, room in ipairs(rooms:GetChildren()) do
-        for _, v in ipairs(room:GetDescendants()) do
-            if v.Name == "GoldPile" or v.Name == "Gold" or v.Name == "ChestBox" or v.Name == "ChestBoxLocked" then
-                if not GoldActiveESP[v] then
-                    GoldActiveESP[v] = true
-                    local val = v:GetAttribute("GoldValue")
-                    local label = val and ("Gold (" .. val .. ")") or "Gold / Chest"
-                    AddESP(v, label, GoldColor)
-                end
-            end
-        end
-    end
-end
-
-local function ClearAllGoldESP()
-    for part in pairs(GoldActiveESP) do
-        ESPLibrary:RemoveESP(part)
-    end
-    table.clear(GoldActiveESP)
-end
-
-local HidingActiveESP = {}
-local function UpdateHidingESP()
-    if not (Options.WardrobeEsp and Options.WardrobeEsp.Value) then return end
-    local rooms = workspace:FindFirstChild("CurrentRooms")
-    if not rooms then return end
-    for _, room in ipairs(rooms:GetChildren()) do
-        for _, v in ipairs(room:GetDescendants()) do
-            if HidingPlaces[v.Name] and not HidingActiveESP[v] then
-                HidingActiveESP[v] = true
-                AddESP(v, HidingPlaces[v.Name], HidingPlaceColor)
-            end
-        end
-    end
-end
-
-local function ClearAllHidingESP()
-    for part in pairs(HidingActiveESP) do
-        ESPLibrary:RemoveESP(part)
-    end
-    table.clear(HidingActiveESP)
-end
-
-local ObjectiveActiveESP = {}
-local function UpdateObjectiveESP()
-    if not (Options.ObjectiveEsp and Options.ObjectiveEsp.Value) then return end
-    local rooms = workspace:FindFirstChild("CurrentRooms")
-    if not rooms then return end
-    for _, room in ipairs(rooms:GetChildren()) do
-        for _, v in ipairs(room:GetDescendants()) do
-            local n = v.Name
-            if n == "LiveHintBook" and not ObjectiveActiveESP[v] then
-                ObjectiveActiveESP[v] = true
-                AddESP(v, "Library Book", BookColor)
-            elseif (n == "LiveBreakerPolePickup" or n == "BreakerSwitch") and not ObjectiveActiveESP[v] then
-                ObjectiveActiveESP[v] = true
-                AddESP(v, "Breaker", BreakerColor)
-            elseif (n == "LeverForGate" or n == "TimerLever") and not ObjectiveActiveESP[v] then
-                ObjectiveActiveESP[v] = true
-                AddESP(v, "Gate Lever", LeverColor)
-            elseif n == "FuseObtain" and not ObjectiveActiveESP[v] then
-                ObjectiveActiveESP[v] = true
-                AddESP(v, "Fuse", FuseColor)
-            elseif n == "MinesGenerator" and not ObjectiveActiveESP[v] then
-                ObjectiveActiveESP[v] = true
-                AddESP(v, "Generator", FuseColor)
-            elseif n == "MinesAnchor" and not ObjectiveActiveESP[v] then
-                ObjectiveActiveESP[v] = true
-                local sign = v:FindFirstChild("Sign")
-                local signText = sign and sign:FindFirstChild("TextLabel") and sign.TextLabel.Text or ""
-                AddESP(v, "Anchor " .. signText, Color3.fromRGB(0, 200, 255))
-            end
-        end
-    end
-end
-
-local function ClearAllObjectiveESP()
-    for part in pairs(ObjectiveActiveESP) do
-        ESPLibrary:RemoveESP(part)
-    end
-    table.clear(ObjectiveActiveESP)
-end
-
-local EntityActiveESP = {}
+-- Сканер конкретного объекта
 local notifiedEntities = {}
-local function CheckEntity(v)
+local function processObject(v, roomName)
+    if not v or not v.Parent then return end
     local n = v.Name
-    local label = EntityAll[n]
-    if not label then
-        for key, val in pairs(EntityAll) do
-            if n:find(key) then label = val break end
+
+    -- ВСЕ ДВЕРИ И КЛЮЧИ
+    if Options.DoorEsp and Options.DoorEsp.Value then
+        if n == "Door" and v:IsA("Model") then
+            local doorPart = v:FindFirstChild("Door") or v:FindFirstChildWhichIsA("BasePart")
+            if doorPart then
+                local dName = roomName and ("Door " .. roomName) or "Door"
+                AddESP(doorPart, dName, DoorColor)
+            end
+        elseif n == "KeyObtain" or n == "Key" then
+            AddESP(v, "Key", Color3.fromRGB(0, 255, 180))
+        elseif n == "ElectrialKeyObtain" then
+            AddESP(v, "Electrical Key", Color3.fromRGB(0, 255, 180))
         end
     end
 
-    if label then
-        if not EntityActiveESP[v] and Options.EntityEsp and Options.EntityEsp.Value then
-            EntityActiveESP[v] = true
-            AddEntityESP(v, "⚠ " .. label .. " ⚠", EntityColor)
+    -- ПРЕДМЕТЫ
+    if Options.ItemEsp and Options.ItemEsp.Value then
+        if Items[n] then
+            AddESP(v, Items[n], ItemsColor)
+        end
+    end
+
+    -- ЗОЛОТО
+    if Options.GoldEsp and Options.GoldEsp.Value then
+        if n == "GoldPile" or n == "Gold" or n == "ChestBox" or n == "ChestBoxLocked" then
+            local val = v:GetAttribute("GoldValue")
+            local label = val and ("Gold (" .. val .. ")") or "Gold"
+            AddESP(v, label, GoldColor)
+        end
+    end
+
+    -- УКРЫТИЯ
+    if Options.WardrobeEsp and Options.WardrobeEsp.Value then
+        if HidingPlaces[n] then
+            AddESP(v, HidingPlaces[n], HidingPlaceColor)
+        end
+    end
+
+    -- ЗАДАНИЯ / ПАЗЛЫ
+    if Options.ObjectiveEsp and Options.ObjectiveEsp.Value then
+        if n == "LiveHintBook" then
+            AddESP(v, "Library Book", BookColor)
+        elseif n == "LiveBreakerPolePickup" or n == "BreakerSwitch" then
+            AddESP(v, "Breaker", BreakerColor)
+        elseif n == "LeverForGate" or n == "TimerLever" then
+            AddESP(v, "Gate Lever", LeverColor)
+        elseif n == "FuseObtain" then
+            AddESP(v, "Fuse", FuseColor)
+        elseif n == "MinesGenerator" then
+            AddESP(v, "Generator", FuseColor)
+        elseif n == "MinesAnchor" then
+            local sign = v:FindFirstChild("Sign")
+            local signText = sign and sign:FindFirstChild("TextLabel") and sign.TextLabel.Text or ""
+            AddESP(v, "Anchor " .. signText, Color3.fromRGB(0, 200, 255))
+        end
+    end
+
+    -- МОНСТРЫ
+    if EntityAll[n] then
+        local label = EntityAll[n]
+        if Options.EntityEsp and Options.EntityEsp.Value then
+            AddESP(v, "⚠ " .. label .. " ⚠", EntityColor)
         end
         if not notifiedEntities[v] then
             notifiedEntities[v] = true
@@ -741,94 +650,150 @@ local function CheckEntity(v)
 
             Fluent:Notify({
                 Title = "⚠ ENTITY SPAWNED!",
-                Content = label .. " is approaching / spawned!",
+                Content = label .. " is approaching!",
                 Duration = 6
             })
             v.AncestryChanged:Connect(function(_, parent)
-                if not parent then
-                    notifiedEntities[v] = nil
-                    if EntityActiveESP[v] then
-                        EntityActiveESP[v] = nil
-                        ESPLibrary:RemoveESP(v)
-                    end
-                end
+                if not parent then notifiedEntities[v] = nil end
             end)
         end
     end
 end
 
-local function UpdateEntityESP()
-    if not (Options.EntityEsp and Options.EntityEsp.Value) then return end
-    for _, v in ipairs(workspace:GetChildren()) do CheckEntity(v) end
+-- Сканирование комнат без лагов
+local function ScanAllRooms()
     local rooms = workspace:FindFirstChild("CurrentRooms")
-    if rooms then
-        for _, room in ipairs(rooms:GetChildren()) do
-            for _, v in ipairs(room:GetDescendants()) do CheckEntity(v) end
+    if not rooms then return end
+    for _, room in ipairs(rooms:GetChildren()) do
+        local rName = room.Name
+        for _, obj in ipairs(room:GetDescendants()) do
+            processObject(obj, rName)
         end
     end
+    for _, obj in ipairs(workspace:GetChildren()) do
+        processObject(obj, nil)
+    end
 end
 
-local function ClearAllEntityESP()
-    for part in pairs(EntityActiveESP) do
+local function ClearAllESP()
+    for part in pairs(ESPTracked) do
         ESPLibrary:RemoveESP(part)
     end
-    table.clear(EntityActiveESP)
+    table.clear(ESPTracked)
 end
 
-workspace.ChildAdded:Connect(function(v)
-    task.wait(0.05)
-    CheckEntity(v)
-end)
-
-local function UpdateAllESP()
-    UpdateDoorESP()
-    UpdateItemESP()
-    UpdateGoldESP()
-    UpdateHidingESP()
-    UpdateObjectiveESP()
-    UpdateEntityESP()
-end
-
-local roomsFolder = workspace:FindFirstChild("CurrentRooms")
-if roomsFolder then
-    roomsFolder.ChildAdded:Connect(function(room)
+-- Обработка добавления новых комнат
+local currentRoomsFolder = workspace:WaitForChild("CurrentRooms", 10)
+if currentRoomsFolder then
+    currentRoomsFolder.ChildAdded:Connect(function(room)
         task.wait(0.2)
-        UpdateAllESP()
-        room.DescendantAdded:Connect(function()
-            task.wait(0.1)
-            UpdateAllESP()
+        local rName = room.Name
+        for _, obj in ipairs(room:GetDescendants()) do
+            processObject(obj, rName)
+        end
+        room.DescendantAdded:Connect(function(obj)
+            processObject(obj, rName)
         end)
     end)
-    for _, room in ipairs(roomsFolder:GetChildren()) do
-        room.DescendantAdded:Connect(function()
-            task.wait(0.1)
-            UpdateAllESP()
+    for _, room in ipairs(currentRoomsFolder:GetChildren()) do
+        local rName = room.Name
+        room.DescendantAdded:Connect(function(obj)
+            processObject(obj, rName)
         end)
     end
 end
-task.spawn(UpdateAllESP)
+
+workspace.ChildAdded:Connect(function(child)
+    task.wait(0.05)
+    processObject(child, nil)
+end)
+
+task.spawn(ScanAllRooms)
 
 -- Игроки ESP
-local PlayerActiveESP = {}
 local function UpdatePlayerESP()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character then
             if Options.PlayerEsp and Options.PlayerEsp.Value then
                 local hum = plr.Character:FindFirstChildOfClass("Humanoid")
                 if hum and hum.Health > 0 then
-                    ESPLibrary:RemoveESP(plr.Character)
                     AddESP(plr.Character, plr.DisplayName .. " [" .. math.floor(hum.Health) .. "%]", PlayerColor)
-                    PlayerActiveESP[plr.Character] = true
                 end
             else
-                if PlayerActiveESP[plr.Character] then
-                    ESPLibrary:RemoveESP(plr.Character)
-                    PlayerActiveESP[plr.Character] = nil
-                end
+                SafeRemoveESP(plr.Character)
             end
         end
     end
 end
+
+-- ==================== VISUALS TICK (FOV, NO FOG, FULLBRIGHT, THIRD PERSON) ====================
+RunService.RenderStepped:Connect(function()
+    local cam = workspace.CurrentCamera
+
+    -- FOV
+    if Options.FOVSlider and Options.FOVSlider.Value then
+        if cam and cam.FieldOfView ~= Options.FOVSlider.Value then
+            cam.FieldOfView = Options.FOVSlider.Value
+        end
+    end
+
+    -- THIRD PERSON
+    if Options.ThirdPersonToggle and Options.ThirdPersonToggle.Value then
+        if cam then
+            local offX = Options.ThirdPersonX and Options.ThirdPersonX.Value or 2
+            local offY = Options.ThirdPersonY and Options.ThirdPersonY.Value or 0
+            local offZ = Options.ThirdPersonZ and Options.ThirdPersonZ.Value or 4
+            cam.CFrame = cam.CFrame * CFrame.new(offX, offY, offZ)
+        end
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in ipairs(char:GetChildren()) do
+                if part:IsA("BasePart") and (part.Name == "Head" or part.Name == "FakeHead") then
+                    part.Transparency = 0
+                    part.LocalTransparencyModifier = 0
+                elseif part:IsA("Accessory") then
+                    local handle = part:FindFirstChild("Handle")
+                    if handle then
+                        handle.Transparency = 0
+                        handle.LocalTransparencyModifier = 0
+                    end
+                end
+            end
+        end
+    end
+
+    -- NO FOG
+    if Options.NoFog and Options.NoFog.Value then
+        if Lighting.FogEnd < 100000 then Lighting.FogEnd = 100000 end
+        if Lighting.FogStart ~= 0 then Lighting.FogStart = 0 end
+        for _, v in ipairs(Lighting:GetChildren()) do
+            if v:IsA("Atmosphere") and v.Density > 0 then
+                v.Density = 0
+            end
+        end
+    end
+
+    -- FULLBRIGHT
+    if Options.FullBright and Options.FullBright.Value then
+        if Lighting.Ambient ~= Color3.fromRGB(255, 255, 255) then
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+        end
+        if Lighting.Brightness < 2 then
+            Lighting.Brightness = 2
+        end
+        if Lighting.ClockTime ~= 14 then
+            Lighting.ClockTime = 14
+        end
+        local rooms = workspace:FindFirstChild("CurrentRooms")
+        if rooms then
+            for _, r in ipairs(rooms:GetChildren()) do
+                if r:GetAttribute("Ambient") ~= Color3.fromRGB(255, 255, 255) then
+                    r:SetAttribute("Ambient", Color3.fromRGB(255, 255, 255))
+                end
+            end
+        end
+    end
+end)
 
 -- ==================== BYPASSES & MOVEMENT ====================
 
@@ -926,6 +891,7 @@ local function setFly(enabled)
 end
 
 -- 4. Manipulation (AntiCheatMani from kyksikoid)
+local isManipulationHolding = false
 local function setManipulation(enabled)
     updateKeybindState("Mani", enabled)
     local char = LocalPlayer.Character
@@ -1049,32 +1015,32 @@ end
 
 local DoorToggle = Tabs.ESP:AddToggle("DoorEsp", { Title = T("DoorESP"), Description = T("DoorESPDesc"), Default = true })
 DoorToggle:OnChanged(function(state)
-    if state then UpdateDoorESP() else ClearAllDoorESP() end
+    if state then ScanAllRooms() else ClearAllESP() end
 end)
 
 local ItemToggle = Tabs.ESP:AddToggle("ItemEsp", { Title = T("ItemESP"), Description = T("ItemESPDesc"), Default = true })
 ItemToggle:OnChanged(function(state)
-    if state then UpdateItemESP() else ClearAllItemESP() end
+    if state then ScanAllRooms() else ClearAllESP() end
 end)
 
 local GoldToggle = Tabs.ESP:AddToggle("GoldEsp", { Title = T("GoldESP"), Description = T("GoldESPDesc"), Default = true })
 GoldToggle:OnChanged(function(state)
-    if state then UpdateGoldESP() else ClearAllGoldESP() end
+    if state then ScanAllRooms() else ClearAllESP() end
 end)
 
 local WardrobeToggle = Tabs.ESP:AddToggle("WardrobeEsp", { Title = T("WardrobeESP"), Description = T("WardrobeESPDesc"), Default = true })
 WardrobeToggle:OnChanged(function(state)
-    if state then UpdateHidingESP() else ClearAllHidingESP() end
+    if state then ScanAllRooms() else ClearAllESP() end
 end)
 
 local ObjectiveToggle = Tabs.ESP:AddToggle("ObjectiveEsp", { Title = T("ObjectiveESP"), Description = T("ObjectiveESPDesc"), Default = true })
 ObjectiveToggle:OnChanged(function(state)
-    if state then UpdateObjectiveESP() else ClearAllObjectiveESP() end
+    if state then ScanAllRooms() else ClearAllESP() end
 end)
 
 local EntityToggle = Tabs.ESP:AddToggle("EntityEsp", { Title = T("EntityESP"), Description = T("EntityESPDesc"), Default = true })
 EntityToggle:OnChanged(function(state)
-    if state then UpdateEntityESP() else ClearAllEntityESP() end
+    if state then ScanAllRooms() else ClearAllESP() end
 end)
 
 local PlayerToggle = Tabs.ESP:AddToggle("PlayerEsp", { Title = T("PlayerESP"), Description = T("PlayerESPDesc"), Default = false })
@@ -1186,7 +1152,7 @@ Tabs.Movement:AddSlider("SpeedSlider", {
     Title = T("SpeedVal"),
     Default = 22,
     Min = 16,
-    Max = 75, -- Установлен максимум 75 как в оригинале kyksikoid!
+    Max = 75,
     Rounding = 0,
     Callback = function(_) end
 })
@@ -1219,12 +1185,16 @@ Tabs.Movement:AddDropdown("AntiCheatManiMethod", {
 
 local ManiTog = Tabs.Movement:AddToggle("AntiCheatMani", {
     Title = T("Manipulation"),
-    Description = "Bypassed anti-cheat velocity / position manipulation",
+    Description = "Hold [V] in-game to activate manipulation, release to stop",
     Default = false
 })
-ManiTog:OnChanged(setManipulation)
+ManiTog:OnChanged(function(val)
+    if not isManipulationHolding then
+        setManipulation(val)
+    end
+end)
 
--- Горячие клавиши (Keybinds)
+-- Горячие клавиши (Keybinds) с поддержкой HOLD [V]
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.N then
@@ -1236,36 +1206,30 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
             Options.FlyToggle:SetValue(not Options.FlyToggle.Value)
         end
     elseif input.KeyCode == Enum.KeyCode.V then
-        if Options.AntiCheatMani then
-            Options.AntiCheatMani:SetValue(not Options.AntiCheatMani.Value)
+        -- ЗАЖАТИЕ [V] -> ВКЛЮЧИТЬ
+        isManipulationHolding = true
+        setManipulation(true)
+        if Options.AntiCheatMani then Options.AntiCheatMani:SetValue(true) end
+    elseif input.KeyCode == Enum.KeyCode.T then
+        if Options.ThirdPersonToggle then
+            Options.ThirdPersonToggle:SetValue(not Options.ThirdPersonToggle.Value)
         end
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if input.KeyCode == Enum.KeyCode.V then
+        -- ОТПУСКАНИЕ [V] -> ВЫКЛЮЧИТЬ
+        isManipulationHolding = false
+        setManipulation(false)
+        if Options.AntiCheatMani then Options.AntiCheatMani:SetValue(false) end
     end
 end)
 
 -- ==================== ВКЛАДКА: VISUALS ====================
 
-local FullBrightTog = Tabs.Visuals:AddToggle("FullBright", { Title = T("FullBright"), Default = false })
-FullBrightTog:OnChanged(function(state)
-    if state then
-        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-        Lighting.Brightness = 2
-    else
-        Lighting.Ambient = Color3.fromRGB(0, 0, 0)
-        Lighting.Brightness = 1
-    end
-end)
-
-local NoFogTog = Tabs.Visuals:AddToggle("NoFog", { Title = T("NoFog"), Default = false })
-NoFogTog:OnChanged(function(state)
-    if state then
-        Lighting.FogEnd = 100000
-        for _, v in ipairs(Lighting:GetChildren()) do
-            if v:IsA("Atmosphere") then v.Density = 0 end
-        end
-    else
-        Lighting.FogEnd = 1000
-    end
-end)
+Tabs.Visuals:AddToggle("FullBright", { Title = T("FullBright"), Default = false })
+Tabs.Visuals:AddToggle("NoFog", { Title = T("NoFog"), Default = false })
 
 Tabs.Visuals:AddSlider("FOVSlider", {
     Title = T("FOV"),
@@ -1273,9 +1237,57 @@ Tabs.Visuals:AddSlider("FOVSlider", {
     Min = 70,
     Max = 120,
     Rounding = 0,
-    Callback = function(val)
-        workspace.CurrentCamera.FieldOfView = val
+    Callback = function(_) end
+})
+
+local ThirdPersonTog = Tabs.Visuals:AddToggle("ThirdPersonToggle", {
+    Title = T("ThirdPerson"),
+    Description = T("ThirdPersonDesc"),
+    Default = false
+})
+ThirdPersonTog:OnChanged(function(state)
+    updateKeybindState("ThirdPerson", state)
+    if not state and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetChildren()) do
+            if part:IsA("BasePart") and (part.Name == "Head" or part.Name == "FakeHead") then
+                part.Transparency = 1
+                part.LocalTransparencyModifier = 1
+            elseif part:IsA("Accessory") then
+                local handle = part:FindFirstChild("Handle")
+                if handle then
+                    handle.Transparency = 1
+                    handle.LocalTransparencyModifier = 1
+                end
+            end
+        end
     end
+end)
+
+Tabs.Visuals:AddSlider("ThirdPersonX", {
+    Title = T("OffsetX"),
+    Default = 2,
+    Min = -10,
+    Max = 10,
+    Rounding = 1,
+    Callback = function(_) end
+})
+
+Tabs.Visuals:AddSlider("ThirdPersonY", {
+    Title = T("OffsetY"),
+    Default = 0,
+    Min = -10,
+    Max = 10,
+    Rounding = 1,
+    Callback = function(_) end
+})
+
+Tabs.Visuals:AddSlider("ThirdPersonZ", {
+    Title = T("OffsetZ"),
+    Default = 4,
+    Min = -10,
+    Max = 10,
+    Rounding = 1,
+    Callback = function(_) end
 })
 
 -- ==================== ВКЛАДКА: AUTO & SOLVERS ====================
