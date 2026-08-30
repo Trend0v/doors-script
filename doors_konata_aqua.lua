@@ -1,5 +1,5 @@
 -- KonataHub | Doors Ultimate (Aqua Edition)
--- Fully rewritten with kyksikoid's bypasses, advanced ESP & HUD State
+-- Featuring kyksikoid's ESPLibrary, Bypasses, Speed (75 Max), Manipulation, Keybinds HUD, and Archives Entities (Bash, Honcho, Ransom, Alma, Teller)
 
 repeat task.wait() until game:IsLoaded()
 
@@ -11,11 +11,15 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local Stats = game:GetService("Stats")
+local HttpService = game:GetService("HttpService")
 
--- Библиотека Fluent UI (Исправлены проверенные ссылки)
+-- Fluent UI & Addons
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+-- kyksikoid's ESPLibrary
+local ESPLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/TheHunterSolo1/Scripts/main/ESPLibrary"))()
 
 -- Ремоуты Doors
 local RemotesFolder = ReplicatedStorage:FindFirstChild("EntityInfo") 
@@ -46,7 +50,7 @@ end
 local currentFloor = getDoorsFloor()
 
 -- ==================== СИСТЕМА ЛОКАЛИЗАЦИИ ====================
-local CurrentLang = "English" -- По умолчанию English
+local CurrentLang = "English"
 
 local LangData = {
     English = {
@@ -60,34 +64,42 @@ local LangData = {
         TabSettings = "Settings",
         
         -- ESP
-        DoorESP = "Doors & Keys ESP",
-        DoorESPDesc = "Highlight doors, keys and locks",
-        ItemESP = "Items ESP",
+        DoorESP = "Doors & Keys",
+        DoorESPDesc = "Highlight doors, keys, and electrical locks",
+        ItemESP = "Items",
         ItemESPDesc = "Crucifix, Lockpicks, Flashlight, Vitamins, etc.",
-        GoldESP = "Gold / Coins ESP",
-        GoldESPDesc = "Highlight coins and chests with value",
-        WardrobeESP = "Wardrobe & Closets ESP",
-        WardrobeESPDesc = "Highlight safe hiding places",
-        ObjectiveESP = "Objectives & Puzzles ESP",
+        GoldESP = "Gold / Coins",
+        GoldESPDesc = "Coins, gold piles with value, and chests",
+        WardrobeESP = "Hiding Places",
+        WardrobeESPDesc = "Wardrobes, closets, lockers, beds, vents",
+        ObjectiveESP = "Objectives & Puzzles",
         ObjectiveESPDesc = "Levers, Breakers, Books, Fuses, Anchors",
-        EntityESP = "Entities ESP",
-        EntityESPDesc = "Rush, Ambush, Figure, Seek, Eyes, etc.",
-        PlayerESP = "Players ESP",
-        PlayerESPDesc = "Highlight other players and health",
+        EntityESP = "Entities (All Monsters)",
+        EntityESPDesc = "Rush, Ambush, Figure, Seek, Archives monsters, etc.",
+        PlayerESP = "Players",
+        PlayerESPDesc = "Other players and health percentage",
+        
+        -- ESP Settings
+        ESPMode = "ESP Render Mode",
+        ShowDistance = "Show Distance",
+        ShowTracers = "Show Tracers",
+        ShowRainbow = "Rainbow ESP",
         
         -- Movement
         Noclip = "Noclip",
         NoclipDesc = "Walk through walls and barriers",
-        BypassSpeed = "Speed (CFrame Bypass)",
-        BypassSpeedDesc = "Bypassed speed without anticheat lagbacks",
-        SpeedVal = "Speed Value",
+        BypassSpeed = "Bypass Speed",
+        BypassSpeedDesc = "Bypassed speed up to 75 without lagbacks",
+        SpeedVal = "Movement Speed",
         Fly = "Flight (Fly)",
         FlySpeed = "Fly Speed",
         InfJump = "Infinite Jump",
+        Manipulation = "Anti-Cheat Manipulation",
+        ManipulationMethod = "Manipulation Method",
         
         -- Bypasses
-        AntiScreech = "Anti Screech",
-        AntiA90 = "Anti A90",
+        AntiScreech = "Anti Screech Damage",
+        AntiA90 = "Anti A90 Damage",
         AntiDread = "Anti Dread",
         AntiHalt = "Anti Halt",
         AntiEyes = "Anti Eyes & Lookman",
@@ -106,9 +118,11 @@ local LangData = {
         -- Auto
         AutoBreaker = "Auto Room 100 Breaker Solver",
         
-        -- HUD
-        HUDToggle = "Show HUD State",
-        HUDDesc = "Toggle Profile, FPS, Ping and Playtime overlay"
+        -- HUDs
+        HUDToggle = "Show Player HUD State",
+        HUDDesc = "Toggle Profile, FPS, Ping and Playtime",
+        KeybindsHUD = "Show Keybinds HUD Overlay",
+        KeybindsHUDDesc = "Floating card showing current active keybind states"
     },
     Russian = {
         WindowTitle = "KonataHub | Doors (" .. currentFloor .. ")",
@@ -121,30 +135,38 @@ local LangData = {
         TabSettings = "Настройки",
         
         -- ESP
-        DoorESP = "ESP Дверей и Ключей",
+        DoorESP = "Двери и Ключи",
         DoorESPDesc = "Подсветка дверей, номеров комнат и ключей",
-        ItemESP = "ESP Предметов",
+        ItemESP = "Предметы",
         ItemESPDesc = "Кресты, отмычки, фонари, витамины и т.д.",
-        GoldESP = "ESP Золота и Монет",
+        GoldESP = "Золото и Монеты",
         GoldESPDesc = "Подсветка золота с указанием суммы",
-        WardrobeESP = "ESP Шкафов / Укрытий",
+        WardrobeESP = "Укрытия / Шкафы",
         WardrobeESPDesc = "Подсветка шкафов, кроватей и вентиляций",
-        ObjectiveESP = "ESP Заданий и Пазлов",
+        ObjectiveESP = "Задания и Пазлы",
         ObjectiveESPDesc = "Рычаги, книги, предохранители, рубильники",
-        EntityESP = "ESP Монстров",
-        EntityESPDesc = "Rush, Ambush, Figure, Seek, Eyes и др.",
-        PlayerESP = "ESP Игроков",
+        EntityESP = "Монстры (Включая Архив)",
+        EntityESPDesc = "Rush, Ambush, Figure, Seek, Bash, Honcho, Ransom, Alma, Teller и др.",
+        PlayerESP = "Игроки",
         PlayerESPDesc = "Подсветка других игроков и здоровья",
+        
+        -- ESP Settings
+        ESPMode = "Режим отрисовки ESP",
+        ShowDistance = "Отображать дистанцию",
+        ShowTracers = "Трейсеры (Линии)",
+        ShowRainbow = "Радужный ESP",
         
         -- Movement
         Noclip = "Ноклип (Сквозь стены)",
         NoclipDesc = "Свободное прохождение через стены и двери",
         BypassSpeed = "Скорость (Обход Античита)",
-        BypassSpeedDesc = "Плавный разгон без откатов назад",
-        SpeedVal = "Значение скорости",
+        BypassSpeedDesc = "Разгон до 75 без откатов назад",
+        SpeedVal = "Скорость движения",
         Fly = "Полет (Fly)",
         FlySpeed = "Скорость полета",
         InfJump = "Бесконечный прыжок",
+        Manipulation = "Манипуляция (Manipulation)",
+        ManipulationMethod = "Метод Манипуляции",
         
         -- Bypasses
         AntiScreech = "Анти Скрич (Без урона)",
@@ -167,9 +189,11 @@ local LangData = {
         -- Auto
         AutoBreaker = "Авто-решение Рубильников (100 комната)",
         
-        -- HUD
+        -- HUDs
         HUDToggle = "HUD Статус игрока",
-        HUDDesc = "Отображение профиля, FPS, пинга и времени игры"
+        HUDDesc = "Отображение профиля, FPS, пинга и времени игры",
+        KeybindsHUD = "Оверлей Кейбиндов (Keybinds HUD)",
+        KeybindsHUDDesc = "Плавающее окно со статусом всех горячих клавиш"
     }
 }
 
@@ -183,7 +207,7 @@ local Window = Fluent:CreateWindow({
     Title = T("WindowTitle"),
     SubTitle = T("SubTitle"),
     TabWidth = 160,
-    Size = UDim2.fromOffset(620, 500),
+    Size = UDim2.fromOffset(630, 510),
     Acrylic = true,
     Theme = "Aqua",
     MinimizeKey = Enum.KeyCode.RightShift
@@ -309,101 +333,151 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ==================== ESP ENGINE ====================
+-- ==================== KEYBINDS HUD OVERLAY ====================
 
-local espFolder = Instance.new("Folder")
-espFolder.Name = "Konata_Doors_ESP"
-pcall(function() espFolder.Parent = CoreGui end)
-if not espFolder.Parent then espFolder.Parent = workspace end
+local keybindsFrame = Instance.new("Frame")
+keybindsFrame.Name = "KeybindsOverlay"
+keybindsFrame.Size = UDim2.new(0, 210, 0, 165)
+keybindsFrame.Position = UDim2.new(0.02, 0, 0.20, 0)
+keybindsFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 28)
+keybindsFrame.BackgroundTransparency = 0.25
+keybindsFrame.BorderSizePixel = 0
+keybindsFrame.Active = true
+keybindsFrame.Draggable = true
+keybindsFrame.Parent = hudGui
 
-local activeESP = {}
+local kbCorner = Instance.new("UICorner")
+kbCorner.CornerRadius = UDim.new(0, 10)
+kbCorner.Parent = keybindsFrame
 
-local function createESP(target, name, color, espType)
-    if not target or activeESP[target] then return end
-    local targetPart = target:IsA("BasePart") and target or target:FindFirstChildWhichIsA("BasePart")
-    if not targetPart then return end
+local kbStroke = Instance.new("UIStroke")
+kbStroke.Color = Color3.fromRGB(0, 225, 255)
+kbStroke.Thickness = 1.5
+kbStroke.Transparency = 0.2
+kbStroke.Parent = keybindsFrame
 
-    local highlight = Instance.new("Highlight")
-    highlight.Name = espType .. "_" .. target.Name
-    highlight.Adornee = target
-    highlight.FillColor = color
-    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-    highlight.FillTransparency = 0.45
-    highlight.OutlineTransparency = 0.1
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Parent = espFolder
+local kbTitle = Instance.new("TextLabel")
+kbTitle.Size = UDim2.new(1, -20, 0, 24)
+kbTitle.Position = UDim2.new(0, 10, 0, 6)
+kbTitle.BackgroundTransparency = 1
+kbTitle.Font = Enum.Font.GothamBold
+kbTitle.TextSize = 13
+kbTitle.TextColor3 = Color3.fromRGB(0, 225, 255)
+kbTitle.TextXAlignment = Enum.TextXAlignment.Left
+kbTitle.Text = "⚡ Keybinds State"
+kbTitle.Parent = keybindsFrame
 
-    local bgui = Instance.new("BillboardGui")
-    bgui.Name = "ESP_Label"
-    bgui.Adornee = targetPart
-    bgui.Size = UDim2.new(0, 160, 0, 45)
-    bgui.AlwaysOnTop = true
-    bgui.LightInfluence = 0
-    bgui.StudsOffset = Vector3.new(0, 2.5, 0)
-    bgui.Parent = espFolder
+local kbList = Instance.new("UIListLayout")
+kbList.SortOrder = Enum.SortOrder.LayoutOrder
+kbList.Padding = UDim.new(0, 4)
 
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = color
-    label.TextStrokeTransparency = 0
-    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 13
-    label.TextXAlignment = Enum.TextXAlignment.Center
-    label.TextYAlignment = Enum.TextYAlignment.Center
-    label.Text = name
-    label.Parent = bgui
+local kbContainer = Instance.new("Frame")
+kbContainer.Size = UDim2.new(1, -20, 1, -38)
+kbContainer.Position = UDim2.new(0, 10, 0, 32)
+kbContainer.BackgroundTransparency = 1
+kbContainer.Parent = keybindsFrame
+kbList.Parent = kbContainer
 
-    local record = {
-        Highlight = highlight,
-        Gui = bgui,
-        Label = label,
-        TargetPart = targetPart,
-        Target = target,
-        Type = espType,
-        BaseName = name
-    }
-    activeESP[target] = record
+local keybindLabels = {}
+local function createKeybindEntry(id, name, defaultKey)
+    local row = Instance.new("Frame")
+    row.Size = UDim2.new(1, 0, 0, 20)
+    row.BackgroundTransparency = 1
+    row.Parent = kbContainer
 
-    local isEnabled = false
-    if espType == "Door" and Options.DoorEsp then isEnabled = Options.DoorEsp.Value
-    elseif espType == "Item" and Options.ItemEsp then isEnabled = Options.ItemEsp.Value
-    elseif espType == "Gold" and Options.GoldEsp then isEnabled = Options.GoldEsp.Value
-    elseif espType == "Wardrobe" and Options.WardrobeEsp then isEnabled = Options.WardrobeEsp.Value
-    elseif espType == "Objective" and Options.ObjectiveEsp then isEnabled = Options.ObjectiveEsp.Value
-    elseif espType == "Entity" and Options.EntityEsp then isEnabled = Options.EntityEsp.Value
-    elseif espType == "Player" and Options.PlayerEsp then isEnabled = Options.PlayerEsp.Value
-    end
+    local nameLbl = Instance.new("TextLabel")
+    nameLbl.Size = UDim2.new(0.65, 0, 1, 0)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Font = Enum.Font.GothamMedium
+    nameLbl.TextSize = 12
+    nameLbl.TextColor3 = Color3.fromRGB(220, 230, 240)
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nameLbl.Text = string.format("[%s] %s", defaultKey, name)
+    nameLbl.Parent = row
 
-    highlight.Enabled = isEnabled
-    bgui.Enabled = isEnabled
+    local stateLbl = Instance.new("TextLabel")
+    stateLbl.Size = UDim2.new(0.35, 0, 1, 0)
+    stateLbl.Position = UDim2.new(0.65, 0, 0, 0)
+    stateLbl.BackgroundTransparency = 1
+    stateLbl.Font = Enum.Font.GothamBold
+    stateLbl.TextSize = 11
+    stateLbl.TextColor3 = Color3.fromRGB(255, 75, 75)
+    stateLbl.TextXAlignment = Enum.TextXAlignment.Right
+    stateLbl.Text = "[OFF]"
+    stateLbl.Parent = row
 
-    target.AncestryChanged:Connect(function(_, parent)
-        if not parent then
-            if activeESP[target] then
-                highlight:Destroy()
-                bgui:Destroy()
-                activeESP[target] = nil
-            end
-        end
-    end)
+    keybindLabels[id] = { Row = row, State = stateLbl, Key = defaultKey, Name = name }
 end
 
-RunService.RenderStepped:Connect(function()
-    local cam = workspace.CurrentCamera
-    if not cam then return end
+createKeybindEntry("Noclip", "Noclip", "N")
+createKeybindEntry("Fly", "Flight", "F")
+createKeybindEntry("Mani", "Manipulation", "V")
+createKeybindEntry("Interact", "Auto Interact", "R")
+createKeybindEntry("Menu", "Toggle Menu", "RShift")
 
-    for target, data in pairs(activeESP) do
-        if data.Gui and data.Gui.Enabled and data.TargetPart and data.TargetPart.Parent then
-            local dist = math.floor((cam.CFrame.Position - data.TargetPart.Position).Magnitude)
-            data.Label.Text = string.format("%s\n[%d m]", data.BaseName, dist)
+local function updateKeybindState(id, isActive)
+    if keybindLabels[id] then
+        keybindLabels[id].State.Text = isActive and "[ON]" or "[OFF]"
+        keybindLabels[id].State.TextColor3 = isActive and Color3.fromRGB(0, 255, 140) or Color3.fromRGB(255, 75, 75)
+    end
+end
+updateKeybindState("Menu", true)
+
+-- ==================== KYKSIKOID ESPLIBRARY INTEGRATION ====================
+
+function AddESP(part, txt, color)
+    if not part then return end
+    ESPLibrary:AddESP({
+        Object = part,
+        Text = txt,
+        Color = color
+    })
+end
+
+function AddEntityESP(part, txt, color)
+    if not part then return end
+    if part:IsA("Model") then
+        if not part.PrimaryPart then
+            for _, v in pairs(part:GetChildren()) do
+                if v:IsA("BasePart") then
+                    part.PrimaryPart = v
+                    break
+                end
+            end
+        end
+        if part.PrimaryPart then
+            pcall(function() part.PrimaryPart.Transparency = 0.99 end)
+        end
+        if not part:FindFirstChildOfClass("Humanoid") then
+            Instance.new("Humanoid", part)
         end
     end
-end)
+    if part.Name == "FigureRig" or part.Name == "FigureRagdoll" then
+        local root = part:FindFirstChild("Root")
+        if root then root.Size = Vector3.new(0.001, 0.001, 0.001) end
+    end
+    ESPLibrary:AddESP({
+        Object = part,
+        Text = txt,
+        Color = color
+    })
+end
 
--- База предметов и сущностей
-local ItemsList = {
+-- Цвета категорий ESP
+local DoorColor        = Color3.fromRGB(0, 225, 255)
+local ItemsColor       = Color3.fromRGB(0, 255, 120)
+local HidingPlaceColor = Color3.fromRGB(150, 100, 255)
+local LeverColor       = Color3.fromRGB(255, 160, 50)
+local BookColor        = Color3.fromRGB(0, 180, 255)
+local BreakerColor     = Color3.fromRGB(0, 180, 255)
+local GoldColor        = Color3.fromRGB(255, 215, 0)
+local LadderColor      = Color3.fromRGB(0, 191, 255)
+local FuseColor        = Color3.fromRGB(255, 170, 0)
+local EntityColor      = Color3.fromRGB(255, 50, 50)
+local PlayerColor      = Color3.fromRGB(100, 200, 255)
+
+-- База всех предметов (включая Archives & Mines)
+local Items = {
     ["Bandage"] = "Bandage",
     ["Flashlight"] = "Flashlight",
     ["Battery"] = "Battery",
@@ -427,15 +501,19 @@ local ItemsList = {
     ["Compass"] = "Compass",
     ["Lantern"] = "Lantern",
     ["KeyIron"] = "Iron Key",
+    ["GoldGun"] = "Golden Gun",
+    ["Candy"] = "Candy",
+    ["WaterPump"] = "Water Pump",
+    ["VineGuillotine"] = "Vine Lever",
     ["Shakelight"] = "Shake Light",
     ["HolyGrenade"] = "Holy Grenade",
     ["ShieldMini"] = "Mini Shield",
-    ["ShieldBig"] = "Big Shield"
+    ["ShieldBig"] = "Big Shield",
+    ["LotusPetalPickup"] = "Lotus Petal"
 }
 
-local HidingList = {
-    ["Wardrobe"] = "Wardrobe",
-    ["Closet"] = "Closet",
+local HidingPlaces = {
+    ["Wardrobe"] = "Closet",
     ["Rooms_Locker"] = "Locker",
     ["Rooms_Locker_Fridge"] = "Fridge",
     ["Locker_Large"] = "Locker",
@@ -447,7 +525,19 @@ local HidingList = {
     ["CircularVent"] = "Vent"
 }
 
-local EntityList = {
+-- База монстров с новыми сущностями из ARCHIVES: Bash, Honcho, Ransom, Alma, Teller!
+local EntityAll = {
+    -- Archives Monsters
+    ["Bash"] = "Bash",
+    ["BashMoving"] = "Bash",
+    ["Honcho"] = "Honcho",
+    ["HonchoRig"] = "Honcho",
+    ["Ransom"] = "Ransom",
+    ["RansomMoving"] = "Ransom",
+    ["Alma"] = "Alma",
+    ["Teller"] = "Teller",
+    
+    -- Hotel & Mines & Retro & Rooms Monsters
     ["RushMoving"] = "Rush",
     ["AmbushMoving"] = "Ambush",
     ["Eyes"] = "Eyes",
@@ -461,143 +551,413 @@ local EntityList = {
     ["SeekMoving"] = "Seek",
     ["Snare"] = "Snare",
     ["DupeRoom"] = "Dupe",
+    ["DoorFake"] = "Dupe",
     ["GiggleCeiling"] = "Giggle",
     ["GrumbleRig"] = "Grumble",
     ["A60"] = "A-60",
     ["A120"] = "A-120",
     ["GlitchRush"] = "Glitch Rush",
     ["GlitchAmbush"] = "Glitch Ambush",
-    ["JeffTheKiller"] = "Jeff The Killer"
+    ["JeffTheKiller"] = "Jeff",
+    ["Groundskeeper"] = "Groundskeeper",
+    ["LiveEntityBramble"] = "Bramble",
+    ["MandrakeLive"] = "Mandrake",
+    ["Mandrake"] = "Mandrake"
 }
 
-local function scanObject(obj, roomNum)
-    local n = obj.Name
-
-    if n == "Door" and obj:IsA("Model") then
-        local doorPart = obj:FindFirstChild("Door") or obj:FindFirstChildWhichIsA("BasePart")
-        if doorPart then
-            createESP(obj, "Door " .. (roomNum or ""), Options.DoorColor and Options.DoorColor.Value or Color3.fromRGB(0, 225, 255), "Door")
-        end
-    elseif n == "KeyObtain" or n == "Key" then
-        createESP(obj, "Key", Color3.fromRGB(0, 255, 180), "Door")
-    elseif n == "ElectrialKeyObtain" then
-        createESP(obj, "Electrical Key", Color3.fromRGB(0, 255, 180), "Door")
-    end
-
-    if ItemsList[n] then
-        createESP(obj, ItemsList[n], Options.ItemColor and Options.ItemColor.Value or Color3.fromRGB(0, 255, 120), "Item")
-    end
-
-    if n == "GoldPile" or n == "Gold" or n == "ChestBox" or n == "ChestBoxLocked" then
-        local val = obj:GetAttribute("GoldValue")
-        local goldText = val and ("Gold (" .. val .. ")") or "Gold / Chest"
-        createESP(obj, goldText, Options.GoldColor and Options.GoldColor.Value or Color3.fromRGB(255, 215, 0), "Gold")
-    end
-
-    if HidingList[n] then
-        createESP(obj, HidingList[n], Options.WardrobeColor and Options.WardrobeColor.Value or Color3.fromRGB(150, 100, 255), "Wardrobe")
-    end
-
-    if n == "LiveHintBook" then
-        createESP(obj, "Library Book", Color3.fromRGB(0, 180, 255), "Objective")
-    elseif n == "LiveBreakerPolePickup" or n == "BreakerSwitch" then
-        createESP(obj, "Breaker", Color3.fromRGB(0, 180, 255), "Objective")
-    elseif n == "LeverForGate" or n == "TimerLever" then
-        createESP(obj, "Gate Lever", Color3.fromRGB(255, 160, 50), "Objective")
-    elseif n == "FuseObtain" then
-        createESP(obj, "Fuse", Color3.fromRGB(255, 170, 0), "Objective")
-    elseif n == "MinesGenerator" then
-        createESP(obj, "Generator", Color3.fromRGB(255, 170, 0), "Objective")
-    elseif n == "MinesAnchor" then
-        local sign = obj:FindFirstChild("Sign")
-        local signText = sign and sign:FindFirstChild("TextLabel") and sign.TextLabel.Text or ""
-        createESP(obj, "Anchor " .. signText, Color3.fromRGB(0, 200, 255), "Objective")
+local DoorActiveESP = {}
+local function RemoveDoorESP(part)
+    if part and DoorActiveESP[part] then
+        DoorActiveESP[part] = nil
+        ESPLibrary:RemoveESP(part)
     end
 end
 
-local notifiedEntities = {}
-local function checkEntity(child)
-    local n = child.Name
-    local entityName = EntityList[n]
-
-    if not entityName then
-        for key, val in pairs(EntityList) do
-            if n:find(key) then
-                entityName = val
-                break
+local function UpdateDoorESP()
+    if not (Options.DoorEsp and Options.DoorEsp.Value) then return end
+    local rooms = workspace:FindFirstChild("CurrentRooms")
+    if not rooms then return end
+    for _, room in ipairs(rooms:GetChildren()) do
+        local doorModel = room:FindFirstChild("Door")
+        if doorModel then
+            local doorPart = doorModel:FindFirstChild("Door") or doorModel:FindFirstChildWhichIsA("BasePart")
+            if doorPart and not DoorActiveESP[doorPart] then
+                DoorActiveESP[doorPart] = true
+                AddESP(doorPart, "Door " .. room.Name, DoorColor)
+            end
+        end
+        for _, v in ipairs(room:GetDescendants()) do
+            if v.Name == "KeyObtain" and not DoorActiveESP[v] then
+                DoorActiveESP[v] = true
+                AddESP(v, "Key", Color3.fromRGB(0, 255, 180))
+            elseif v.Name == "ElectrialKeyObtain" and not DoorActiveESP[v] then
+                DoorActiveESP[v] = true
+                AddESP(v, "Electrical Key", Color3.fromRGB(0, 255, 180))
             end
         end
     end
+end
 
-    if entityName and not notifiedEntities[child] then
-        notifiedEntities[child] = true
-        
-        local sound = Instance.new("Sound", workspace)
-        sound.SoundId = "rbxassetid://4590662766"
-        sound.Volume = 1.5
-        sound:Play()
-        game:GetService("Debris"):AddItem(sound, 3)
+local function ClearAllDoorESP()
+    for part in pairs(DoorActiveESP) do
+        ESPLibrary:RemoveESP(part)
+    end
+    table.clear(DoorActiveESP)
+end
 
-        Fluent:Notify({
-            Title = "⚠ ENTITY SPAWNED!",
-            Content = entityName .. " is coming / appeared!",
-            Duration = 6
-        })
-
-        task.wait(0.05)
-        createESP(child, "⚠ " .. entityName .. " ⚠", Options.EntityColor and Options.EntityColor.Value or Color3.fromRGB(255, 50, 50), "Entity")
-        
-        child.AncestryChanged:Connect(function(_, parent)
-            if not parent then notifiedEntities[child] = nil end
-        end)
+local ItemActiveESP = {}
+local function UpdateItemESP()
+    if not (Options.ItemEsp and Options.ItemEsp.Value) then return end
+    local rooms = workspace:FindFirstChild("CurrentRooms")
+    if not rooms then return end
+    for _, room in ipairs(rooms:GetChildren()) do
+        for _, v in ipairs(room:GetDescendants()) do
+            if Items[v.Name] and not ItemActiveESP[v] then
+                ItemActiveESP[v] = true
+                AddESP(v, Items[v.Name], ItemsColor)
+            end
+        end
     end
 end
 
-workspace.ChildAdded:Connect(checkEntity)
+local function ClearAllItemESP()
+    for part in pairs(ItemActiveESP) do
+        ESPLibrary:RemoveESP(part)
+    end
+    table.clear(ItemActiveESP)
+end
 
-local function initRooms()
+local GoldActiveESP = {}
+local function UpdateGoldESP()
+    if not (Options.GoldEsp and Options.GoldEsp.Value) then return end
+    local rooms = workspace:FindFirstChild("CurrentRooms")
+    if not rooms then return end
+    for _, room in ipairs(rooms:GetChildren()) do
+        for _, v in ipairs(room:GetDescendants()) do
+            if v.Name == "GoldPile" or v.Name == "Gold" or v.Name == "ChestBox" or v.Name == "ChestBoxLocked" then
+                if not GoldActiveESP[v] then
+                    GoldActiveESP[v] = true
+                    local val = v:GetAttribute("GoldValue")
+                    local label = val and ("Gold (" .. val .. ")") or "Gold / Chest"
+                    AddESP(v, label, GoldColor)
+                end
+            end
+        end
+    end
+end
+
+local function ClearAllGoldESP()
+    for part in pairs(GoldActiveESP) do
+        ESPLibrary:RemoveESP(part)
+    end
+    table.clear(GoldActiveESP)
+end
+
+local HidingActiveESP = {}
+local function UpdateHidingESP()
+    if not (Options.WardrobeEsp and Options.WardrobeEsp.Value) then return end
+    local rooms = workspace:FindFirstChild("CurrentRooms")
+    if not rooms then return end
+    for _, room in ipairs(rooms:GetChildren()) do
+        for _, v in ipairs(room:GetDescendants()) do
+            if HidingPlaces[v.Name] and not HidingActiveESP[v] then
+                HidingActiveESP[v] = true
+                AddESP(v, HidingPlaces[v.Name], HidingPlaceColor)
+            end
+        end
+    end
+end
+
+local function ClearAllHidingESP()
+    for part in pairs(HidingActiveESP) do
+        ESPLibrary:RemoveESP(part)
+    end
+    table.clear(HidingActiveESP)
+end
+
+local ObjectiveActiveESP = {}
+local function UpdateObjectiveESP()
+    if not (Options.ObjectiveEsp and Options.ObjectiveEsp.Value) then return end
+    local rooms = workspace:FindFirstChild("CurrentRooms")
+    if not rooms then return end
+    for _, room in ipairs(rooms:GetChildren()) do
+        for _, v in ipairs(room:GetDescendants()) do
+            local n = v.Name
+            if n == "LiveHintBook" and not ObjectiveActiveESP[v] then
+                ObjectiveActiveESP[v] = true
+                AddESP(v, "Library Book", BookColor)
+            elseif (n == "LiveBreakerPolePickup" or n == "BreakerSwitch") and not ObjectiveActiveESP[v] then
+                ObjectiveActiveESP[v] = true
+                AddESP(v, "Breaker", BreakerColor)
+            elseif (n == "LeverForGate" or n == "TimerLever") and not ObjectiveActiveESP[v] then
+                ObjectiveActiveESP[v] = true
+                AddESP(v, "Gate Lever", LeverColor)
+            elseif n == "FuseObtain" and not ObjectiveActiveESP[v] then
+                ObjectiveActiveESP[v] = true
+                AddESP(v, "Fuse", FuseColor)
+            elseif n == "MinesGenerator" and not ObjectiveActiveESP[v] then
+                ObjectiveActiveESP[v] = true
+                AddESP(v, "Generator", FuseColor)
+            elseif n == "MinesAnchor" and not ObjectiveActiveESP[v] then
+                ObjectiveActiveESP[v] = true
+                local sign = v:FindFirstChild("Sign")
+                local signText = sign and sign:FindFirstChild("TextLabel") and sign.TextLabel.Text or ""
+                AddESP(v, "Anchor " .. signText, Color3.fromRGB(0, 200, 255))
+            end
+        end
+    end
+end
+
+local function ClearAllObjectiveESP()
+    for part in pairs(ObjectiveActiveESP) do
+        ESPLibrary:RemoveESP(part)
+    end
+    table.clear(ObjectiveActiveESP)
+end
+
+local EntityActiveESP = {}
+local notifiedEntities = {}
+local function CheckEntity(v)
+    local n = v.Name
+    local label = EntityAll[n]
+    if not label then
+        for key, val in pairs(EntityAll) do
+            if n:find(key) then label = val break end
+        end
+    end
+
+    if label then
+        if not EntityActiveESP[v] and Options.EntityEsp and Options.EntityEsp.Value then
+            EntityActiveESP[v] = true
+            AddEntityESP(v, "⚠ " .. label .. " ⚠", EntityColor)
+        end
+        if not notifiedEntities[v] then
+            notifiedEntities[v] = true
+            local sound = Instance.new("Sound", workspace)
+            sound.SoundId = "rbxassetid://4590662766"
+            sound.Volume = 1.5
+            sound:Play()
+            game:GetService("Debris"):AddItem(sound, 3)
+
+            Fluent:Notify({
+                Title = "⚠ ENTITY SPAWNED!",
+                Content = label .. " is approaching / spawned!",
+                Duration = 6
+            })
+            v.AncestryChanged:Connect(function(_, parent)
+                if not parent then
+                    notifiedEntities[v] = nil
+                    if EntityActiveESP[v] then
+                        EntityActiveESP[v] = nil
+                        ESPLibrary:RemoveESP(v)
+                    end
+                end
+            end)
+        end
+    end
+end
+
+local function UpdateEntityESP()
+    if not (Options.EntityEsp and Options.EntityEsp.Value) then return end
+    for _, v in ipairs(workspace:GetChildren()) do CheckEntity(v) end
     local rooms = workspace:FindFirstChild("CurrentRooms")
     if rooms then
         for _, room in ipairs(rooms:GetChildren()) do
-            for _, item in ipairs(room:GetDescendants()) do
-                scanObject(item, room.Name)
-            end
-            room.DescendantAdded:Connect(function(item)
-                scanObject(item, room.Name)
-            end)
+            for _, v in ipairs(room:GetDescendants()) do CheckEntity(v) end
         end
-        rooms.ChildAdded:Connect(function(room)
-            task.wait(0.2)
-            for _, item in ipairs(room:GetDescendants()) do
-                scanObject(item, room.Name)
-            end
-            room.DescendantAdded:Connect(function(item)
-                scanObject(item, room.Name)
-            end)
+    end
+end
+
+local function ClearAllEntityESP()
+    for part in pairs(EntityActiveESP) do
+        ESPLibrary:RemoveESP(part)
+    end
+    table.clear(EntityActiveESP)
+end
+
+workspace.ChildAdded:Connect(function(v)
+    task.wait(0.05)
+    CheckEntity(v)
+end)
+
+local function UpdateAllESP()
+    UpdateDoorESP()
+    UpdateItemESP()
+    UpdateGoldESP()
+    UpdateHidingESP()
+    UpdateObjectiveESP()
+    UpdateEntityESP()
+end
+
+local roomsFolder = workspace:FindFirstChild("CurrentRooms")
+if roomsFolder then
+    roomsFolder.ChildAdded:Connect(function(room)
+        task.wait(0.2)
+        UpdateAllESP()
+        room.DescendantAdded:Connect(function()
+            task.wait(0.1)
+            UpdateAllESP()
+        end)
+    end)
+    for _, room in ipairs(roomsFolder:GetChildren()) do
+        room.DescendantAdded:Connect(function()
+            task.wait(0.1)
+            UpdateAllESP()
         end)
     end
 end
-task.spawn(initRooms)
+task.spawn(UpdateAllESP)
 
-local function updatePlayersESP()
+-- Игроки ESP
+local PlayerActiveESP = {}
+local function UpdatePlayerESP()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer and plr.Character then
-            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-            if hum and hum.Health > 0 then
-                createESP(plr.Character, plr.DisplayName .. " [" .. math.floor(hum.Health) .. "%]", Color3.fromRGB(100, 200, 255), "Player")
+            if Options.PlayerEsp and Options.PlayerEsp.Value then
+                local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+                if hum and hum.Health > 0 then
+                    ESPLibrary:RemoveESP(plr.Character)
+                    AddESP(plr.Character, plr.DisplayName .. " [" .. math.floor(hum.Health) .. "%]", PlayerColor)
+                    PlayerActiveESP[plr.Character] = true
+                end
+            else
+                if PlayerActiveESP[plr.Character] then
+                    ESPLibrary:RemoveESP(plr.Character)
+                    PlayerActiveESP[plr.Character] = nil
+                end
             end
         end
     end
 end
-Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function()
-        task.wait(1)
-        updatePlayersESP()
-    end)
-end)
 
--- ==================== BYPASSES ====================
+-- ==================== BYPASSES & MOVEMENT ====================
 
+-- 1. Noclip
+local noclipConn
+local function setNoclip(enabled)
+    updateKeybindState("Noclip", enabled)
+    if enabled then
+        noclipConn = RunService.Stepped:Connect(function()
+            local char = LocalPlayer.Character
+            if char then
+                for _, part in ipairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if noclipConn then noclipConn:Disconnect() noclipConn = nil end
+    end
+end
+
+-- 2. Bypass Speed (Max 75) + Crouch remote loop
+local speedConn
+local crouchBypassLoop
+local function setBypassSpeed(enabled)
+    if enabled then
+        speedConn = RunService.RenderStepped:Connect(function(delta)
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
+                local hum = char.Humanoid
+                if hum.MoveDirection.Magnitude > 0 then
+                    local targetSpeed = Options.SpeedSlider and Options.SpeedSlider.Value or 22
+                    local speedMultiplier = targetSpeed - 15
+                    if speedMultiplier > 0 then
+                        char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + (hum.MoveDirection * (speedMultiplier * delta))
+                    end
+                end
+            end
+        end)
+        
+        crouchBypassLoop = task.spawn(function()
+            while task.wait(0.2) do
+                if not (Options.SpeedToggle and Options.SpeedToggle.Value) then break end
+                if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
+                    RemotesFolder.Crouch:FireServer(true, true)
+                end
+            end
+        end)
+    else
+        if speedConn then speedConn:Disconnect() speedConn = nil end
+        if crouchBypassLoop then task.cancel(crouchBypassLoop) crouchBypassLoop = nil end
+    end
+end
+
+-- 3. Flight
+local flyConn
+local function setFly(enabled)
+    updateKeybindState("Fly", enabled)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = char.HumanoidRootPart
+
+    if enabled then
+        local bg = Instance.new("BodyGyro", root)
+        bg.Name = "Konata_FlyGyro"
+        bg.P = 9e4
+        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.cframe = root.CFrame
+
+        local bv = Instance.new("BodyVelocity", root)
+        bv.Name = "Konata_FlyVelocity"
+        bv.velocity = Vector3.zero
+        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
+
+        flyConn = RunService.RenderStepped:Connect(function()
+            local cam = workspace.CurrentCamera
+            if not cam or not char:FindFirstChild("Humanoid") then return end
+            bg.cframe = cam.CFrame
+            local hum = char.Humanoid
+            local speed = Options.FlySpeedSlider and Options.FlySpeedSlider.Value or 25
+            
+            if hum.MoveDirection.Magnitude > 0 then
+                bv.velocity = cam.CFrame:VectorToWorldSpace(cam.CFrame:VectorToObjectSpace(hum.MoveDirection)) * speed
+            else
+                bv.velocity = Vector3.zero
+            end
+        end)
+    else
+        if flyConn then flyConn:Disconnect() flyConn = nil end
+        if root:FindFirstChild("Konata_FlyGyro") then root.Konata_FlyGyro:Destroy() end
+        if root:FindFirstChild("Konata_FlyVelocity") then root.Konata_FlyVelocity:Destroy() end
+    end
+end
+
+-- 4. Manipulation (AntiCheatMani from kyksikoid)
+local function setManipulation(enabled)
+    updateKeybindState("Mani", enabled)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local root = char.HumanoidRootPart
+
+    if enabled then
+        local method = Options.AntiCheatManiMethod and Options.AntiCheatManiMethod.Value or "Velocity"
+        if method == "Velocity" then
+            if not (Options.NoclipToggle and Options.NoclipToggle.Value) then
+                setNoclip(true)
+            end
+            local BodyVelocity = root:FindFirstChild("VelocityMani") or Instance.new("BodyVelocity", root)
+            local LookingVector = root.CFrame.LookVector * 2
+            BodyVelocity.Velocity = Vector3.new(LookingVector.X, LookingVector.Y, LookingVector.Z)
+            BodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            BodyVelocity.Name = "VelocityMani"
+        else
+            local currentPivot = char:GetPivot()
+            char:PivotTo(currentPivot * CFrame.new(0, 0, 10000))
+        end
+    else
+        if root:FindFirstChild("VelocityMani") then
+            root.VelocityMani:Destroy()
+        end
+        if not (Options.NoclipToggle and Options.NoclipToggle.Value) then
+            setNoclip(false)
+        end
+    end
+end
+
+-- 5. Anti Entity Bypasses
 local FakeScreech = Instance.new("RemoteEvent")
 FakeScreech.Name = "Screech_"
 
@@ -685,182 +1045,78 @@ local function setSilentStep(state)
     end
 end
 
-local noclipConn
-local function setNoclip(enabled)
-    if enabled then
-        noclipConn = RunService.Stepped:Connect(function()
-            local char = LocalPlayer.Character
-            if char then
-                for _, part in ipairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") and part.CanCollide then
-                        part.CanCollide = false
-                    end
-                end
-            end
-        end)
-    else
-        if noclipConn then noclipConn:Disconnect() noclipConn = nil end
-    end
-end
+-- ==================== ВКЛАДКА: ESP ====================
 
-local speedConn
-local crouchBypassLoop
-local function setBypassSpeed(enabled)
-    if enabled then
-        speedConn = RunService.RenderStepped:Connect(function(delta)
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
-                local hum = char.Humanoid
-                if hum.MoveDirection.Magnitude > 0 then
-                    local speedMultiplier = (Options.SpeedSlider and Options.SpeedSlider.Value or 20) - 15
-                    if speedMultiplier > 0 then
-                        char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + (hum.MoveDirection * (speedMultiplier * delta))
-                    end
-                end
-            end
-        end)
-        
-        crouchBypassLoop = task.spawn(function()
-            while task.wait(0.2) do
-                if not (Options.SpeedToggle and Options.SpeedToggle.Value) then break end
-                if RemotesFolder and RemotesFolder:FindFirstChild("Crouch") then
-                    RemotesFolder.Crouch:FireServer(true, true)
-                end
-            end
-        end)
-    else
-        if speedConn then speedConn:Disconnect() speedConn = nil end
-        if crouchBypassLoop then task.cancel(crouchBypassLoop) crouchBypassLoop = nil end
-    end
-end
-
-local flyConn
-local function setFly(enabled)
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    local root = char.HumanoidRootPart
-
-    if enabled then
-        local bg = Instance.new("BodyGyro", root)
-        bg.Name = "Konata_FlyGyro"
-        bg.P = 9e4
-        bg.maxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bg.cframe = root.CFrame
-
-        local bv = Instance.new("BodyVelocity", root)
-        bv.Name = "Konata_FlyVelocity"
-        bv.velocity = Vector3.zero
-        bv.maxForce = Vector3.new(9e9, 9e9, 9e9)
-
-        flyConn = RunService.RenderStepped:Connect(function()
-            local cam = workspace.CurrentCamera
-            if not cam or not char:FindFirstChild("Humanoid") then return end
-            bg.cframe = cam.CFrame
-            local hum = char.Humanoid
-            local speed = Options.FlySpeedSlider and Options.FlySpeedSlider.Value or 22
-            
-            if hum.MoveDirection.Magnitude > 0 then
-                bv.velocity = cam.CFrame:VectorToWorldSpace(cam.CFrame:VectorToObjectSpace(hum.MoveDirection)) * speed
-            else
-                bv.velocity = Vector3.zero
-            end
-        end)
-    else
-        if flyConn then flyConn:Disconnect() flyConn = nil end
-        if root:FindFirstChild("Konata_FlyGyro") then root.Konata_FlyGyro:Destroy() end
-        if root:FindFirstChild("Konata_FlyVelocity") then root.Konata_FlyVelocity:Destroy() end
-    end
-end
-
--- ==================== UI TABS ====================
-
--- ESP Tab
 local DoorToggle = Tabs.ESP:AddToggle("DoorEsp", { Title = T("DoorESP"), Description = T("DoorESPDesc"), Default = true })
 DoorToggle:OnChanged(function(state)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Door" then data.Highlight.Enabled = state data.Gui.Enabled = state end
-    end
-end)
-
-local DoorColor = Tabs.ESP:AddColorpicker("DoorColor", { Title = "Door Color", Default = Color3.fromRGB(0, 225, 255) })
-DoorColor:OnChanged(function(col)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Door" then data.Highlight.FillColor = col data.Label.TextColor3 = col end
-    end
+    if state then UpdateDoorESP() else ClearAllDoorESP() end
 end)
 
 local ItemToggle = Tabs.ESP:AddToggle("ItemEsp", { Title = T("ItemESP"), Description = T("ItemESPDesc"), Default = true })
 ItemToggle:OnChanged(function(state)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Item" then data.Highlight.Enabled = state data.Gui.Enabled = state end
-    end
-end)
-
-local ItemColor = Tabs.ESP:AddColorpicker("ItemColor", { Title = "Item Color", Default = Color3.fromRGB(0, 255, 120) })
-ItemColor:OnChanged(function(col)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Item" then data.Highlight.FillColor = col data.Label.TextColor3 = col end
-    end
+    if state then UpdateItemESP() else ClearAllItemESP() end
 end)
 
 local GoldToggle = Tabs.ESP:AddToggle("GoldEsp", { Title = T("GoldESP"), Description = T("GoldESPDesc"), Default = true })
 GoldToggle:OnChanged(function(state)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Gold" then data.Highlight.Enabled = state data.Gui.Enabled = state end
-    end
-end)
-
-local GoldColor = Tabs.ESP:AddColorpicker("GoldColor", { Title = "Gold Color", Default = Color3.fromRGB(255, 215, 0) })
-GoldColor:OnChanged(function(col)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Gold" then data.Highlight.FillColor = col data.Label.TextColor3 = col end
-    end
+    if state then UpdateGoldESP() else ClearAllGoldESP() end
 end)
 
 local WardrobeToggle = Tabs.ESP:AddToggle("WardrobeEsp", { Title = T("WardrobeESP"), Description = T("WardrobeESPDesc"), Default = true })
 WardrobeToggle:OnChanged(function(state)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Wardrobe" then data.Highlight.Enabled = state data.Gui.Enabled = state end
-    end
-end)
-
-local WardrobeColor = Tabs.ESP:AddColorpicker("WardrobeColor", { Title = "Wardrobe Color", Default = Color3.fromRGB(150, 100, 255) })
-WardrobeColor:OnChanged(function(col)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Wardrobe" then data.Highlight.FillColor = col data.Label.TextColor3 = col end
-    end
+    if state then UpdateHidingESP() else ClearAllHidingESP() end
 end)
 
 local ObjectiveToggle = Tabs.ESP:AddToggle("ObjectiveEsp", { Title = T("ObjectiveESP"), Description = T("ObjectiveESPDesc"), Default = true })
 ObjectiveToggle:OnChanged(function(state)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Objective" then data.Highlight.Enabled = state data.Gui.Enabled = state end
-    end
+    if state then UpdateObjectiveESP() else ClearAllObjectiveESP() end
 end)
 
 local EntityToggle = Tabs.ESP:AddToggle("EntityEsp", { Title = T("EntityESP"), Description = T("EntityESPDesc"), Default = true })
 EntityToggle:OnChanged(function(state)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Entity" then data.Highlight.Enabled = state data.Gui.Enabled = state end
-    end
-end)
-
-local EntityColor = Tabs.ESP:AddColorpicker("EntityColor", { Title = "Entity Color", Default = Color3.fromRGB(255, 50, 50) })
-EntityColor:OnChanged(function(col)
-    for _, data in pairs(activeESP) do
-        if data.Type == "Entity" then data.Highlight.FillColor = col data.Label.TextColor3 = col end
-    end
+    if state then UpdateEntityESP() else ClearAllEntityESP() end
 end)
 
 local PlayerToggle = Tabs.ESP:AddToggle("PlayerEsp", { Title = T("PlayerESP"), Description = T("PlayerESPDesc"), Default = false })
-PlayerToggle:OnChanged(function(state)
-    updatePlayersESP()
-    for _, data in pairs(activeESP) do
-        if data.Type == "Player" then data.Highlight.Enabled = state data.Gui.Enabled = state end
-    end
+PlayerToggle:OnChanged(function(_)
+    UpdatePlayerESP()
 end)
 
--- Bypasses Tab
+Tabs.ESP:AddDropdown("ESPModeDropdown", {
+    Title = T("ESPMode"),
+    Values = { "Highlight/Text", "Text", "Highlight" },
+    Default = "Highlight/Text",
+    Callback = function(val)
+        ESPLibrary:SetESPMode(val)
+    end
+})
+
+Tabs.ESP:AddToggle("ShowDistanceToggle", {
+    Title = T("ShowDistance"),
+    Default = true,
+    Callback = function(val)
+        ESPLibrary:SetShowDistance(val)
+    end
+})
+
+Tabs.ESP:AddToggle("ShowTracersToggle", {
+    Title = T("ShowTracers"),
+    Default = false,
+    Callback = function(val)
+        ESPLibrary:SetTracers(val)
+    end
+})
+
+Tabs.ESP:AddToggle("ShowRainbowToggle", {
+    Title = T("ShowRainbow"),
+    Default = false,
+    Callback = function(val)
+        ESPLibrary:SetRainbow(val)
+    end
+})
+
+-- ==================== ВКЛАДКА: BYPASSES ====================
+
 local AntiScreechTog = Tabs.Bypasses:AddToggle("AntiScreech", { Title = T("AntiScreech"), Default = true })
 AntiScreechTog:OnChanged(setAntiScreech)
 
@@ -918,7 +1174,8 @@ task.spawn(function()
     end
 end)
 
--- Movement Tab
+-- ==================== ВКЛАДКА: MOVEMENT ====================
+
 local NoclipTog = Tabs.Movement:AddToggle("NoclipToggle", { Title = T("Noclip"), Description = T("NoclipDesc"), Default = false })
 NoclipTog:OnChanged(setNoclip)
 
@@ -927,9 +1184,9 @@ SpeedTog:OnChanged(setBypassSpeed)
 
 Tabs.Movement:AddSlider("SpeedSlider", {
     Title = T("SpeedVal"),
-    Default = 21,
+    Default = 22,
     Min = 16,
-    Max = 45,
+    Max = 75, -- Установлен максимум 75 как в оригинале kyksikoid!
     Rounding = 0,
     Callback = function(_) end
 })
@@ -939,9 +1196,9 @@ FlyTog:OnChanged(setFly)
 
 Tabs.Movement:AddSlider("FlySpeedSlider", {
     Title = T("FlySpeed"),
-    Default = 22,
+    Default = 25,
     Min = 15,
-    Max = 60,
+    Max = 75,
     Rounding = 0,
     Callback = function(_) end
 })
@@ -954,7 +1211,39 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- Visuals Tab
+Tabs.Movement:AddDropdown("AntiCheatManiMethod", {
+    Title = T("ManipulationMethod"),
+    Values = { "Velocity", "Anticheat" },
+    Default = "Velocity"
+})
+
+local ManiTog = Tabs.Movement:AddToggle("AntiCheatMani", {
+    Title = T("Manipulation"),
+    Description = "Bypassed anti-cheat velocity / position manipulation",
+    Default = false
+})
+ManiTog:OnChanged(setManipulation)
+
+-- Горячие клавиши (Keybinds)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.N then
+        if Options.NoclipToggle then
+            Options.NoclipToggle:SetValue(not Options.NoclipToggle.Value)
+        end
+    elseif input.KeyCode == Enum.KeyCode.F then
+        if Options.FlyToggle then
+            Options.FlyToggle:SetValue(not Options.FlyToggle.Value)
+        end
+    elseif input.KeyCode == Enum.KeyCode.V then
+        if Options.AntiCheatMani then
+            Options.AntiCheatMani:SetValue(not Options.AntiCheatMani.Value)
+        end
+    end
+end)
+
+-- ==================== ВКЛАДКА: VISUALS ====================
+
 local FullBrightTog = Tabs.Visuals:AddToggle("FullBright", { Title = T("FullBright"), Default = false })
 FullBrightTog:OnChanged(function(state)
     if state then
@@ -989,7 +1278,8 @@ Tabs.Visuals:AddSlider("FOVSlider", {
     end
 })
 
--- Auto Tab
+-- ==================== ВКЛАДКА: AUTO & SOLVERS ====================
+
 local function runBreakerSolver(part)
     local label = part:WaitForChild("SurfaceGui", 5) and part.SurfaceGui:WaitForChild("Frame", 5) and part.SurfaceGui.Frame:WaitForChild("Code", 5)
     if not label then return end
@@ -1072,7 +1362,8 @@ Tabs.Auto:AddButton({
     end
 })
 
--- Settings Tab
+-- ==================== ВКЛАДКА: SETTINGS ====================
+
 local HudToggle = Tabs.Settings:AddToggle("HUDToggle", {
     Title = T("HUDToggle"),
     Description = T("HUDDesc"),
@@ -1080,6 +1371,15 @@ local HudToggle = Tabs.Settings:AddToggle("HUDToggle", {
 })
 HudToggle:OnChanged(function(state)
     hudFrame.Visible = state
+end)
+
+local KeybindsHudToggle = Tabs.Settings:AddToggle("KeybindsHUDToggle", {
+    Title = T("KeybindsHUD"),
+    Description = T("KeybindsHUDDesc"),
+    Default = true
+})
+KeybindsHudToggle:OnChanged(function(state)
+    keybindsFrame.Visible = state
 end)
 
 local LangDropdown = Tabs.Settings:AddDropdown("LanguageSelect", {
